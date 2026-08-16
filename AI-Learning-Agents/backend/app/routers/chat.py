@@ -1,14 +1,13 @@
 from fastapi import APIRouter
-from app.services.ai_service import AIService
+from app.services.ai_service import Agent
 
 router = APIRouter()
-
-ai_service = AIService()
+agent = Agent()
 
 
 @router.get("/chat")
 def chat(message: str):
 
     return {
-        "response": ai_service.chat(message)
+        "response": agent.run(message)
     }
