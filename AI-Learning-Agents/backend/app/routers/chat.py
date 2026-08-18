@@ -1,18 +1,18 @@
 from fastapi import APIRouter
 
 from app.agent.agent import Agent
-from app.services.gemini_service import GeminiService
 
 router = APIRouter()
 
-agent = Agent(
-    llm=GeminiService()
-)
-
 
 @router.get("/chat")
-def chat(message: str):
+def chat(
+    message: str,
+    provider: str = "gemini",
+):
+    agent = Agent(provider=provider)
 
     return {
-        "response": agent.run(message)
+        "provider": provider,
+        "response": agent.run(message),
     }
