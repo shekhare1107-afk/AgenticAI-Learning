@@ -1,8 +1,13 @@
 from fastapi import APIRouter
-from app.services.ai_service import Agent
+
+from app.agent.agent import Agent
+from app.services.gemini_service import GeminiService
 
 router = APIRouter()
-agent = Agent()
+
+agent = Agent(
+    llm=GeminiService()
+)
 
 
 @router.get("/chat")
