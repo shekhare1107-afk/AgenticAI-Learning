@@ -23,9 +23,45 @@ class GeminiService(LLMService):
 
         self.tool_registry = ToolRegistry()
 
+    def _get_gemini_tools(self) -> list[types.Tool]:
+
+        function_declarations = []
+
+        for tool_schema in self.tool_registry.get_schemas():
+
+            properties = {}
+
+            for name, definition in tool_schema["parameters"]["properties"].items():
+
+                properties[name] = types.Schema(
+                    type=definition["type"].upper(),
+                    description=definition.get("description"),
+                )
+
+            function_declaration = types.FunctionDeclaration(
+                name=tool_schema["name"],
+                description=tool_schema["description"],
+                parameters=types.Schema(
+                    type="OBJECT",
+                    properties=properties,
+                    required=tool_schema["parameters"].get(
+                        "required",
+                        []
+                    ),
+                ),
+            )
+
+            function_declarations.append(function_declaration)
+
+        return [
+            types.Tool(
+                function_declarations=function_declarations
+            )
+        ]
+    
     def decide(self, message: str) -> dict:
 
-        calculate_tool = types.FunctionDeclaration(
+        """ calculate_tool = types.FunctionDeclaration(
             name="calculate",
             description="Perform a mathematical calculation.",
             parameters=types.Schema(
@@ -50,13 +86,15 @@ class GeminiService(LLMService):
 
         gemini_tool = types.Tool(
             function_declarations=[calculate_tool]
-        )
+        ) """
 
+        gemini_tools = self._get_gemini_tools()
+        
         response = self.client.models.generate_content(
             model="gemini-3.6-flash",
             contents=message,
             config=types.GenerateContentConfig(
-                tools=[gemini_tool],
+                tools=gemini_tools,
                 automatic_function_calling=types.AutomaticFunctionCallingConfig(
                     disable=True
                 ),

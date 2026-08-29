@@ -1,6 +1,6 @@
 from app.tools.calculator import calculate
+from app.tools.temperature import convert_temperature
 from app.tools.tool_definition import ToolDefinition
-
 
 class ToolRegistry:
 
@@ -24,6 +24,26 @@ class ToolRegistry:
                     },
                 },
                 function=calculate,
+            ),
+
+            "convert_temperature": ToolDefinition(
+                name="convert_temperature",
+                description="Convert a temperature between Celsius and Fahrenheit",
+                parameters={
+                    "value": {
+                        "type": "number",
+                        "description": "Temperature value to convert",
+                    },
+                    "from_unit": {
+                        "type": "string",
+                        "description": "Current unit: celsius or fahrenheit",
+                    },
+                    "to_unit": {
+                        "type": "string",
+                        "description": "Target unit: celsius or fahrenheit",
+                    },
+                },
+                function=convert_temperature,
             )
         }
 
