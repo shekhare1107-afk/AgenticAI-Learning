@@ -6,12 +6,14 @@ function App() {
   const [response, setResponse] = useState("");
   const [provider, setProvider] = useState("gemini");
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
 
   const sendMessage = async () => {
     if (!message.trim() || loading) return;
 
     setLoading(true);
     setResponse("");
+    setError("");
 
     try {
       const result = await axios.get(
@@ -29,9 +31,30 @@ function App() {
 
     } catch (error) {
       console.error(error);
-      setResponse(
-        "Something went wrong while connecting to the AI Agent."
-      );
+
+      if (axios.isAxiosError(error)) {
+        if (error.response) {
+          // Backend responded with an error (400, 500, etc.)
+          setError(
+            error.response.data?.detail ||
+            "Something went wrong while processing your request."
+          );
+        } else if (error.request) {
+          // Request was sent but backend did not respond
+          setError(
+            "Unable to connect to the server. Please check if the backend is running."
+          );
+        } else {
+          // Error while creating the request
+          setError(
+            "Unable to send the request. Please try again."
+          );
+        }
+      } else {
+        setError(
+          "An unexpected error occurred. Please try again."
+        );
+      }
 
     } finally {
       setLoading(false);
@@ -59,6 +82,7 @@ function App() {
       <select
         value={provider}
         onChange={(e) => setProvider(e.target.value)}
+        disabled={loading}
         style={{
           marginLeft: "10px",
           padding: "8px",
@@ -81,6 +105,7 @@ function App() {
         }}
         placeholder="Try: Calculate 125 + 350"
         value={message}
+        disabled={loading}
         onChange={(e) => setMessage(e.target.value)}
         onKeyDown={(e) => {
           if (e.key === "Enter") {
@@ -104,6 +129,21 @@ function App() {
       </button>
 
       <hr />
+
+      {/* Error Notification */}
+      {error && (
+        <div
+          style={{
+            backgroundColor: "#ffe5e5",
+            border: "1px solid #ff9999",
+            padding: "12px",
+            borderRadius: "8px",
+            marginBottom: "15px",
+          }}
+        >
+          ⚠️ {error}
+        </div>
+      )}
 
       <h3>AI Response</h3>
 
