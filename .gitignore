@@ -14,3 +14,4 @@ AI-Learning-Agents/backend/.env
 /AI-Learning-Agents/backend/app/tools/__pycache__/registry.cpython-314.pyc
 /AI-Learning-Agents/backend/app/tools/__pycache__/temperature.cpython-314.pyc
 /AI-Learning-Agents/backend/app/__pycache__/main.cpython-314.pyc
+/AI-Learning-Agents/backend/logs

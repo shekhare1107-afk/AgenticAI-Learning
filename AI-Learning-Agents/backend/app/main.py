@@ -1,8 +1,11 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from app.core.logger import setup_logging
 
 from app.routers.health import router as health_router
 from app.routers.chat import router as chat_router
+
+setup_logging()
 
 app = FastAPI(
     title="AI Learning Agent",
