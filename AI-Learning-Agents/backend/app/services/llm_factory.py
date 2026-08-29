@@ -39,7 +39,7 @@ class LLMFactory:
 
             return ClaudeService()
 
-        if provider == "google":
+        if provider in ["gemini", "google"]:
             if not GOOGLE_CONFIG.enabled:
                 raise ValueError("Gemini provider is disabled.")
 
