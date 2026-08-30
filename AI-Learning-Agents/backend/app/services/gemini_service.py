@@ -59,7 +59,7 @@ class GeminiService(LLMService):
             )
         ]
     
-    def decide(self, message: str) -> dict:
+    def decide(self, context: list[dict]) -> dict:
 
         """ calculate_tool = types.FunctionDeclaration(
             name="calculate",
@@ -88,11 +88,27 @@ class GeminiService(LLMService):
             function_declarations=[calculate_tool]
         ) """
 
+        prompt_parts = []
+
+        for item in context:
+
+            if item["type"] == "user_message":
+                prompt_parts.append(
+                    f"User request: {item['content']}"
+                )
+
+            elif item["type"] == "tool_result":
+                prompt_parts.append(
+                    f"Tool '{item['tool']}' returned: {item['result']}"
+                )
+
+        prompt = "\n".join(prompt_parts)
+
         gemini_tools = self._get_gemini_tools()
         
         response = self.client.models.generate_content(
             model="gemini-3.6-flash",
-            contents=message,
+            contents=prompt,
             config=types.GenerateContentConfig(
                 tools=gemini_tools,
                 automatic_function_calling=types.AutomaticFunctionCallingConfig(
