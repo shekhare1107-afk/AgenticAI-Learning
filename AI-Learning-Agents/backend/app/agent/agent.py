@@ -1,9 +1,13 @@
+import logging
+
+from app.core.exceptions import ToolExecutionError
 from app.services.llm_factory import LLMFactory
 from app.services.llm_service import LLMService
 from app.tools.registry import ToolRegistry
-import logging
+
 
 logger = logging.getLogger(__name__)
+
 
 class Agent:
 
@@ -28,12 +32,20 @@ class Agent:
 
         for iteration in range(max_iterations):
 
-            logger.info("Agent iteration %s/%s started.",iteration + 1,max_iterations)
-
+            logger.info(
+                "Agent iteration %s/%s started.",
+                iteration + 1,
+                max_iterations,
+            )
 
             decision = self.llm.decide(context)
 
-            logger.info("Agent decision %s/%s: %s",iteration + 1,max_iterations,decision["type"])
+            logger.info(
+                "Agent decision %s/%s: %s",
+                iteration + 1,
+                max_iterations,
+                decision["type"],
+            )
 
             if decision["type"] == "final_response":
                 return decision["content"]
@@ -52,16 +64,27 @@ class Agent:
                 tool = self.tool_registry.get_tool(tool_name)
 
                 if tool is None:
-                    return f"Tool '{tool_name}' is not available."
+
+                    logger.error(
+                        "Requested tool '%s' is not available.",
+                        tool_name,
+                    )
+
+                    raise ToolExecutionError(
+                        message=f"Tool '{tool_name}' is not available.",
+                        status_code=400,
+                        error_code="TOOL_NOT_FOUND",
+                    )
 
                 try:
+
                     result = tool.function(**arguments)
 
                     logger.info(
                         "Tool '%s' executed successfully. Result: %s",
                         tool_name,
                         result,
-                        )
+                    )
 
                     context.append(
                         {
@@ -71,33 +94,46 @@ class Agent:
                         }
                     )
 
-                    # Do not return here.
-                    # The loop should continue and ask the LLM again.
+                    # Continue the agent loop.
+                    # The LLM receives the tool result and decides
+                    # whether another tool is required or a final
+                    # response can be returned.
                     continue
 
                 except ValueError as error:
 
-                    logger.warning(
-                        "Tool '%s' failed with validation error. Error: %s",
+                    logger.exception(
+                        "Tool '%s' execution failed with validation error. "
+                        "Arguments: %s",
                         tool_name,
-                        str(error),
-                        )
+                        arguments,
+                    )
 
-                    continue
+                    raise ToolExecutionError(
+                        message=f"Invalid input while executing tool '{tool_name}'.",
+                        status_code=400,
+                        error_code="TOOL_VALIDATION_ERROR",
+                    ) from error
 
-                except Exception:
+                except Exception as error:
 
                     logger.exception(
-                        "Unexpected error while executing tool '%s'.",
+                        "Unexpected error while executing tool '%s'. "
+                        "Arguments: %s",
                         tool_name,
-                        )
-              
-                    return "An unexpected error occurred while executing the tool."
+                        arguments,
+                    )
+
+                    raise ToolExecutionError(
+                        message=f"Failed to execute tool '{tool_name}'.",
+                        status_code=500,
+                        error_code="TOOL_EXECUTION_ERROR",
+                    ) from error
 
         logger.warning(
             "Agent stopped after reaching maximum iterations: %s",
             max_iterations,
-            )
+        )
 
         return (
             "I could not complete the request within the allowed number "

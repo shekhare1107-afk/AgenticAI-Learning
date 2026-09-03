@@ -1,9 +1,15 @@
+import logging
+
 from google import genai
 from google.genai import types
 
+from app.core.exceptions import ProviderError
 from app.services.llm_service import LLMService
 from app.config.llm_config import GOOGLE_CONFIG
 from app.tools.registry import ToolRegistry
+
+
+logger = logging.getLogger(__name__)
 
 
 class GeminiService(LLMService):
@@ -12,10 +18,18 @@ class GeminiService(LLMService):
         self.config = GOOGLE_CONFIG
 
         if not self.config.enabled:
-            raise ValueError("Gemini provider is disabled.")
+            raise ProviderError(
+                message="Gemini provider is currently disabled.",
+                status_code=503,
+                error_code="PROVIDER_DISABLED",
+            )
 
         if not self.config.api_key:
-            raise ValueError("Gemini API key is not configured.")
+            raise ProviderError(
+                message="Gemini API key is not configured.",
+                status_code=500,
+                error_code="API_KEY_MISSING",
+            )
 
         self.client = genai.Client(
             api_key=self.config.api_key
@@ -58,35 +72,8 @@ class GeminiService(LLMService):
                 function_declarations=function_declarations
             )
         ]
-    
+
     def decide(self, context: list[dict]) -> dict:
-
-        """ calculate_tool = types.FunctionDeclaration(
-            name="calculate",
-            description="Perform a mathematical calculation.",
-            parameters=types.Schema(
-                type="OBJECT",
-                properties={
-                    "a": types.Schema(
-                        type="NUMBER",
-                        description="First number."
-                    ),
-                    "operator": types.Schema(
-                        type="STRING",
-                        description="Mathematical operator: +, -, *, or /."
-                    ),
-                    "b": types.Schema(
-                        type="NUMBER",
-                        description="Second number."
-                    ),
-                },
-                required=["a", "operator", "b"],
-            ),
-        )
-
-        gemini_tool = types.Tool(
-            function_declarations=[calculate_tool]
-        ) """
 
         prompt_parts = []
 
@@ -105,17 +92,33 @@ class GeminiService(LLMService):
         prompt = "\n".join(prompt_parts)
 
         gemini_tools = self._get_gemini_tools()
-        
-        response = self.client.models.generate_content(
-            model="gemini-3.6-flash",
-            contents=prompt,
-            config=types.GenerateContentConfig(
-                tools=gemini_tools,
-                automatic_function_calling=types.AutomaticFunctionCallingConfig(
-                    disable=True
+
+        try:
+            response = self.client.models.generate_content(
+                model="gemini-3.6-flash",
+                contents=prompt,
+                config=types.GenerateContentConfig(
+                    tools=gemini_tools,
+                    automatic_function_calling=types.AutomaticFunctionCallingConfig(
+                        disable=True
+                    ),
                 ),
-            ),
-        )
+            )
+
+        except Exception as error:
+
+            logger.exception(
+                "Gemini API request failed."
+            )
+
+            raise ProviderError(
+                message=(
+                    "The Gemini AI service is currently unavailable. "
+                    "Please try again later."
+                ),
+                status_code=503,
+                error_code="PROVIDER_API_ERROR",
+            ) from error
 
         if response.function_calls:
 

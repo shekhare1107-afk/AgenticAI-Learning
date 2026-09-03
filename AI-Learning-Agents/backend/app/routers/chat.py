@@ -3,6 +3,7 @@ import logging
 from fastapi import APIRouter, HTTPException
 
 from app.agent.agent import Agent
+from app.core.exceptions import AgentError
 
 
 router = APIRouter()
@@ -31,9 +32,15 @@ def chat(
         )
 
         return {
+            "success": True,
             "provider": provider,
             "response": response,
         }
+
+    except AgentError:
+        # Let the global exception handler handle
+        # all custom Agent exceptions.
+        raise
 
     except ValueError as error:
         logger.warning(
@@ -55,5 +62,8 @@ def chat(
 
         raise HTTPException(
             status_code=500,
-            detail="Something went wrong while processing your request. Please try again.",
+            detail=(
+                "Something went wrong while processing your request. "
+                "Please try again."
+            ),
         )

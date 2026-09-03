@@ -34,18 +34,25 @@ function App() {
 
       if (axios.isAxiosError(error)) {
         if (error.response) {
-          // Backend responded with an error (400, 500, etc.)
-          setError(
-            error.response.data?.detail ||
-            "Something went wrong while processing your request."
-          );
+          const apiError = error.response.data?.error;
+
+          if (apiError) {
+            setError(
+              `${apiError.message}\n\n` +
+              `Error Code: ${apiError.error_code}\n` +
+              `Error ID: ${apiError.error_id}`
+            );
+          } else {
+            setError(
+              error.response.data?.detail ||
+              "Something went wrong while processing your request."
+            );
+          }
         } else if (error.request) {
-          // Request was sent but backend did not respond
           setError(
             "Unable to connect to the server. Please check if the backend is running."
           );
         } else {
-          // Error while creating the request
           setError(
             "Unable to send the request. Please try again."
           );
@@ -55,7 +62,6 @@ function App() {
           "An unexpected error occurred. Please try again."
         );
       }
-
     } finally {
       setLoading(false);
     }
@@ -91,6 +97,9 @@ function App() {
         <option value="gemini">Google Gemini</option>
         <option value="openai">OpenAI</option>
         <option value="claude">Anthropic Claude</option>
+
+        {/* Temporary option for testing backend error handling */}
+        <option value="invalid">Invalid Provider - Test Error</option>
       </select>
 
       <br />
@@ -139,6 +148,7 @@ function App() {
             padding: "12px",
             borderRadius: "8px",
             marginBottom: "15px",
+            whiteSpace: "pre-wrap",
           }}
         >
           ⚠️ {error}
