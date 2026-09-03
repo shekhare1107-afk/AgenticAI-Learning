@@ -5,11 +5,20 @@ from app.core.logger import setup_logging
 from app.routers.health import router as health_router
 from app.routers.chat import router as chat_router
 
+from app.core.exceptions import AgentError
+from app.core.exception_handlers import agent_error_handler
+
 setup_logging()
 
 app = FastAPI(
     title="AI Learning Agent",
     version="1.0.0"
+)
+
+# Register global Agent exception handler
+app.add_exception_handler(
+    AgentError,
+    agent_error_handler,
 )
 
 app.add_middleware(

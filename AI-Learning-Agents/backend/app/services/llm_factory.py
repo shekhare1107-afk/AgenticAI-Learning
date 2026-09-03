@@ -10,6 +10,8 @@ from app.config.llm_config import (
     GOOGLE_CONFIG,
 )
 
+from app.core.exceptions import ProviderError
+
 
 class LLMFactory:
 
@@ -22,30 +24,61 @@ class LLMFactory:
             return MockLLM()
 
         if provider == "openai":
+
             if not OPENAI_CONFIG.enabled:
-                raise ValueError("OpenAI provider is disabled.")
+                raise ProviderError(
+                    message="OpenAI provider is currently disabled.",
+                    status_code=503,
+                    error_code="PROVIDER_DISABLED",
+                )
 
             if not OPENAI_CONFIG.api_key:
-                raise ValueError("OpenAI API key is not configured.")
+                raise ProviderError(
+                    message="OpenAI API key is not configured.",
+                    status_code=500,
+                    error_code="API_KEY_MISSING",
+                )
 
             return OpenAIService()
 
-        if provider == "anthropic":
+        if provider in ["anthropic", "claude"]:
+
             if not ANTHROPIC_CONFIG.enabled:
-                raise ValueError("Claude provider is disabled.")
+                raise ProviderError(
+                    message="Claude provider is currently disabled.",
+                    status_code=503,
+                    error_code="PROVIDER_DISABLED",
+                )
 
             if not ANTHROPIC_CONFIG.api_key:
-                raise ValueError("Claude API key is not configured.")
+                raise ProviderError(
+                    message="Claude API key is not configured.",
+                    status_code=500,
+                    error_code="API_KEY_MISSING",
+                )
 
             return ClaudeService()
 
-        if provider in ["gemini", "google"]:
+        if provider in ["google", "gemini"]:
+
             if not GOOGLE_CONFIG.enabled:
-                raise ValueError("Gemini provider is disabled.")
+                raise ProviderError(
+                    message="Gemini provider is currently disabled.",
+                    status_code=503,
+                    error_code="PROVIDER_DISABLED",
+                )
 
             if not GOOGLE_CONFIG.api_key:
-                raise ValueError("Gemini API key is not configured.")
+                raise ProviderError(
+                    message="Gemini API key is not configured.",
+                    status_code=500,
+                    error_code="API_KEY_MISSING",
+                )
 
             return GeminiService()
 
-        raise ValueError(f"Unsupported LLM provider: {provider}")
+        raise ProviderError(
+            message=f"Unsupported LLM provider: {provider}",
+            status_code=400,
+            error_code="UNSUPPORTED_PROVIDER",
+        )
